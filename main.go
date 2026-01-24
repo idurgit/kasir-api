@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -15,10 +16,36 @@ type Produk struct {
 	Stok  int     `json:"stok"`
 }
 
+// EndpointDetail represents a single endpoint's metadata
+type EndpointDetail struct {
+	Path        string `json:"path"`
+	Description string `json:"description"`
+}
+
+// EndpointGroup groups endpoints by HTTP method
+type EndpointGroup map[string]EndpointDetail
+
+// APIInfoResponse contains the API metadata
+type APIInfoResponse struct {
+	Endpoint    map[string]EndpointGroup `json:"endpoint"`
+	Environment string                   `json:"environment"`
+	Message     string                   `json:"message"`
+	Version     string                   `json:"version"`
+}
+
 var produk = []Produk{
 	{ID: 1, Nama: "Mie Sedap Goreng", Harga: 3500, Stok: 10},
 	{ID: 2, Nama: "Vit 600ml", Harga: 6000, Stok: 20},
 	{ID: 3, Nama: "Kecap ABC 275ml", Harga: 12000, Stok: 15},
+}
+
+// getEnv retrieves environment variable or returns default value
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
 
 func getProdukByID(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +116,69 @@ func deleteProdukByID(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Produk tidak ditemukan", http.StatusNotFound)
 }
 
+// handleAPIInfo returns API metadata including endpoints, environment, version
+func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Build endpoint metadata for current implementation
+	endpoints := map[string]EndpointGroup{
+		"GET": {
+			"list_products": {
+				Path:        "/api/produk",
+				Description: "tampilkan semua produk",
+			},
+			"get_product": {
+				Path:        "/api/produk/{id}",
+				Description: "tampilkan 1 produk",
+			},
+			"health": {
+				Path:        "/health",
+				Description: "health check endpoint",
+			},
+		},
+		"POST": {
+			"create_product": {
+				Path:        "/api/produk",
+				Description: "tambah produk",
+			},
+		},
+		"PUT": {
+			"update_product": {
+				Path:        "/api/produk/{id}",
+				Description: "update seluruh field",
+			},
+		},
+		"DELETE": {
+			"delete_product": {
+				Path:        "/api/produk/{id}",
+				Description: "menghapus 1 produk",
+			},
+		},
+	}
+
+	// Get configuration from environment or use defaults
+	environment := getEnv("API_ENV", "development")
+	version := getEnv("API_VERSION", "1.0.0")
+	message := getEnv("API_MESSAGE", "simple API")
+
+	response := APIInfoResponse{
+		Endpoint:    endpoints,
+		Environment: environment,
+		Message:     message,
+		Version:     version,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
 func main() {
+	// API metadata endpoint
+	http.HandleFunc("/api", handleAPIInfo)
+
 	// GET localhost:8080/api/produk/{id}
 	// PUT localhost:8080/api/produk/{id}
 	// DELETE localhost:8080/api/produk/{id}
