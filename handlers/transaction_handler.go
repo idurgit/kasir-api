@@ -42,3 +42,52 @@ func (h *TransactionHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(transaction)
 }
+
+func (h *TransactionHandler) HandleTodayReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	summary, err := h.service.GetTodaySalesSummary()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(summary)
+}
+
+func (h *TransactionHandler) HandleDateRangeReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse query parameters
+	query := r.URL.Query()
+	startDate := query.Get("start_date")
+	endDate := query.Get("end_date")
+
+	// Validate parameters
+	if startDate == "" || endDate == "" {
+		http.Error(w, "start_date and end_date are required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate date format (basic validation)
+	if len(startDate) != 10 || len(endDate) != 10 {
+		http.Error(w, "Invalid date format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	summary, err := h.service.GetSalesSummaryByDateRange(startDate, endDate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(summary)
+}

@@ -68,6 +68,14 @@ func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
 				Path:        "/health",
 				Description: "health check endpoint",
 			},
+			"today_report": {
+				Path:        "/api/report/today",
+				Description: "get today's sales summary",
+			},
+			"date_range_report": {
+				Path:        "/api/report",
+				Description: "get sales summary by date range (start_date, end_date query params)",
+			},
 		},
 		"POST": {
 			"create_product": {
@@ -140,6 +148,12 @@ func main() {
 
 	// checkout endpoint
 	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
+
+	// today report endpoint
+	http.HandleFunc("/api/report/today", transactionHandler.HandleTodayReport)
+
+	// date range report endpoint
+	http.HandleFunc("/api/report", transactionHandler.HandleDateRangeReport)
 		
 	// localhost:8080 / health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

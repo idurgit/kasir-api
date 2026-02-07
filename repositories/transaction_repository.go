@@ -91,3 +91,97 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 
 	return res, nil
 }
+
+func (repo *TransactionRepository) GetTodaySalesSummary() (*models.DailySalesSummary, error) {
+	// Get total revenue and transaction count for today
+	var totalRevenue, totalTransaction int
+	err := repo.db.QueryRow(`
+		SELECT COALESCE(SUM(total_amount), 0), COUNT(*)
+		FROM transactions
+		WHERE DATE(created_at) = CURRENT_DATE
+	`).Scan(&totalRevenue, &totalTransaction)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get most selling product today
+	var mostSelling models.MostSellingProduct
+	var name sql.NullString
+	var quantity sql.NullInt64
+
+	err = repo.db.QueryRow(`
+		SELECT p.name, COALESCE(SUM(td.quantity), 0) as total_qty
+		FROM transaction_details td
+		JOIN transactions t ON td.transaction_id = t.id
+		JOIN products p ON td.product_id = p.id
+		WHERE DATE(t.created_at) = CURRENT_DATE
+		GROUP BY p.id, p.name
+		ORDER BY total_qty DESC
+		LIMIT 1
+	`).Scan(&name, &quantity)
+
+	if name.Valid {
+		mostSelling.Name = name.String
+	}
+	if quantity.Valid {
+		mostSelling.Quantity = int(quantity.Int64)
+	}
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return &models.DailySalesSummary{
+		TotalTransaction:   totalTransaction,
+		TotalRevenue:       totalRevenue,
+		MostSellingProduct: mostSelling,
+	}, nil
+}
+
+func (repo *TransactionRepository) GetSalesSummaryByDateRange(startDate, endDate string) (*models.DailySalesSummary, error) {
+	// Get total revenue and transaction count for date range
+	var totalRevenue, totalTransaction int
+	err := repo.db.QueryRow(`
+		SELECT COALESCE(SUM(total_amount), 0), COUNT(*)
+		FROM transactions
+		WHERE DATE(created_at) BETWEEN $1 AND $2
+	`, startDate, endDate).Scan(&totalRevenue, &totalTransaction)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Get most selling product in date range
+	var mostSelling models.MostSellingProduct
+	var name sql.NullString
+	var quantity sql.NullInt64
+
+	err = repo.db.QueryRow(`
+		SELECT p.name, COALESCE(SUM(td.quantity), 0) as total_qty
+		FROM transaction_details td
+		JOIN transactions t ON td.transaction_id = t.id
+		JOIN products p ON td.product_id = p.id
+		WHERE DATE(t.created_at) BETWEEN $1 AND $2
+		GROUP BY p.id, p.name
+		ORDER BY total_qty DESC
+		LIMIT 1
+	`, startDate, endDate).Scan(&name, &quantity)
+
+	if name.Valid {
+		mostSelling.Name = name.String
+	}
+	if quantity.Valid {
+		mostSelling.Quantity = int(quantity.Int64)
+	}
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	return &models.DailySalesSummary{
+		TotalTransaction:   totalTransaction,
+		TotalRevenue:       totalRevenue,
+		MostSellingProduct: mostSelling,
+	}, nil
+}
