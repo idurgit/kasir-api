@@ -91,7 +91,7 @@ func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Get configuration from environment or use defaults
 	environment := getEnv("API_ENV", "development")
-	version := getEnv("API_VERSION", "1.0.0")
+	version := getEnv("API_VERSION", "2.0.0")
 	message := getEnv("API_MESSAGE", "simple API")
 
 	response := APIInfoResponse{
@@ -133,7 +133,13 @@ func main() {
 	// setup routes
 	http.HandleFunc("/api/product", productHandler.HandleProducts)
 	http.HandleFunc("/api/product/", productHandler.HandleProductByID)
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
 	http.HandleFunc("/api/info", handleAPIInfo)
+
+	// checkout endpoint
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
 		
 	// localhost:8080 / health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
