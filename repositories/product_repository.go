@@ -41,14 +41,14 @@ func (repo *ProductRepository) Create(product *models.Product) error {
 	return err
 }
 
-// GetByID - ambil produk by ID
+// GetByID - get product by ID
 func (repo *ProductRepository) GetByID(id int) (*models.Product, error) {
 	query := "SELECT id, name, price, stock, category_id, category_name FROM products WHERE id = $1"
 
 	var p models.Product
 	err := repo.db.QueryRow(query, id).Scan(&p.ID, &p.Name, &p.Price, &p.Stock, &p.CategoryID, &p.CategoryName)
 	if err == sql.ErrNoRows {
-		return nil, errors.New("produk tidak ditemukan")
+		return nil, errors.New("product not found")
 	}
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (repo *ProductRepository) Update(product *models.Product) error {
 	}
 
 	if rows == 0 {
-		return errors.New("produk tidak ditemukan")
+		return errors.New("product not found")
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func (repo *ProductRepository) Delete(id int) error {
 	}
 
 	if rows == 0 {
-		return errors.New("produk tidak ditemukan")
+		return errors.New("product not found")
 	}
 
 	return err

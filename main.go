@@ -15,13 +15,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Produk struct {
-	ID    int     `json:"id"`
-	Nama  string  `json:"nama"`
-	Harga float64 `json:"harga"`
-	Stok  int     `json:"stok"`
-}
-
 // EndpointDetail represents a single endpoint's metadata
 type EndpointDetail struct {
 	Path        string `json:"path"`
@@ -44,12 +37,6 @@ type Config struct {
 	DBConn string `mapstructure:"DB_CONN"`
 }
 
-// var produk = []Produk{
-// 	{ID: 1, Nama: "Mie Sedap Goreng", Harga: 3500, Stok: 10},
-// 	{ID: 2, Nama: "Vit 600ml", Harga: 6000, Stok: 20},
-// 	{ID: 3, Nama: "Kecap ABC 275ml", Harga: 12000, Stok: 15},
-// }
-
 // getEnv retrieves environment variable or returns default value
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
@@ -58,74 +45,6 @@ func getEnv(key, defaultValue string) string {
 	}
 	return value
 }
-
-// func getProdukByID(w http.ResponseWriter, r *http.Request) {
-// 	idStr := strings.TrimPrefix(r.URL.Path, "/api/produk/")
-// 	id, err := strconv.Atoi(idStr)
-// 	if err != nil {
-// 		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-// 		return
-// 	}
-// 	for _, p := range produk {
-// 		if p.ID == id {
-// 			w.Header().Set("Content-Type", "application/json")
-// 			json.NewEncoder(w).Encode(p)
-// 			return
-// 		}
-// 	}
-// 	http.Error(w, "Produk tidak ditemukan", http.StatusNotFound)
-// }
-
-// func updateProdukByID(w http.ResponseWriter, r *http.Request) {
-// 	// get id dari request
-// 	idStr := strings.TrimPrefix(r.URL.Path, "/api/produk/")
-// 	// ganti int
-// 	id, err := strconv.Atoi(idStr)
-// 	if err != nil {
-// 		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-// 		return
-// 	}
-// 	// get data dari request body
-// 	var updatedProduk Produk
-// 	err = json.NewDecoder(r.Body).Decode(&updatedProduk)
-// 	if err != nil {
-// 		http.Error(w, "Invalid request", http.StatusBadRequest)
-// 		return
-// 	}
-// 	// loop produk cari id yg sesuai, ganti sesuai request body
-// 	for i := range produk {
-// 		if produk[i].ID == id {
-// 			updatedProduk.ID = id
-// 			produk[i] = updatedProduk
-// 			w.Header().Set("Content-Type", "application/json")
-// 			json.NewEncoder(w).Encode(updatedProduk)
-// 			return
-// 		}
-// 	}
-// 	http.Error(w, "Produk tidak ditemukan", http.StatusNotFound)
-// }
-
-// func deleteProdukByID(w http.ResponseWriter, r *http.Request) {
-// 	// get id dari request
-// 	idStr := strings.TrimPrefix(r.URL.Path, "/api/produk/")
-// 	// ganti id ke int
-// 	id, err := strconv.Atoi(idStr)
-// 	if err != nil {
-// 		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-// 		return
-// 	}
-// 	// loop produk cari id yg sesuai, hapus data
-// 	for i := range produk {
-// 		if produk[i].ID == id {
-// 			// bikin slice baru dengan data sebelum dan sesudah index i
-// 			produk = append(produk[:i], produk[i+1:]...)
-// 			w.Header().Set("Content-Type", "application/json")
-// 			json.NewEncoder(w).Encode(map[string]string{"message": "Produk deleted successfully"})
-// 			return
-// 		}
-// 	}
-// 	http.Error(w, "Produk tidak ditemukan", http.StatusNotFound)
-// }
 
 // handleAPIInfo returns API metadata including endpoints, environment, version
 func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
@@ -138,12 +57,12 @@ func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
 	endpoints := map[string]EndpointGroup{
 		"GET": {
 			"list_products": {
-				Path:        "/api/produk",
-				Description: "tampilkan semua produk",
+				Path:        "/api/product",
+				Description: "get all products",
 			},
 			"get_product": {
-				Path:        "/api/produk/{id}",
-				Description: "tampilkan 1 produk",
+				Path:        "/api/product/{id}",
+				Description: "get a single product",
 			},
 			"health": {
 				Path:        "/health",
@@ -152,20 +71,20 @@ func handleAPIInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		"POST": {
 			"create_product": {
-				Path:        "/api/produk",
-				Description: "tambah produk",
+				Path:        "/api/product",
+				Description: "create a new product",
 			},
 		},
 		"PUT": {
 			"update_product": {
-				Path:        "/api/produk/{id}",
-				Description: "update seluruh field",
+				Path:        "/api/product/{id}",
+				Description: "update all fields",
 			},
 		},
 		"DELETE": {
 			"delete_product": {
-				Path:        "/api/produk/{id}",
-				Description: "menghapus 1 produk",
+				Path:        "/api/product/{id}",
+				Description: "delete a product",
 			},
 		},
 	}
@@ -212,8 +131,8 @@ func main() {
 	productHandler := handlers.NewProductHandler(productService)
 
 	// setup routes
-	http.HandleFunc("/api/produk", productHandler.HandleProducts)
-	http.HandleFunc("/api/produk/", productHandler.HandleProductByID)
+	http.HandleFunc("/api/product", productHandler.HandleProducts)
+	http.HandleFunc("/api/product/", productHandler.HandleProductByID)
 	http.HandleFunc("/api/info", handleAPIInfo)
 		
 	// localhost:8080 / health
